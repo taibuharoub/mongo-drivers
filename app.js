@@ -1,4 +1,5 @@
 /* eslint-disable no-unused-vars */
+import path from "path";
 import express from "express";
 import compression from "compression";
 import dotenv from "dotenv";
@@ -6,10 +7,12 @@ import cors from "cors";
 dotenv.config();
 import configRoutes from "./routes/index.js";
 
+const __dirname = path.resolve();
 const server = express();
 
 server.use(express.json());
 server.use(express.urlencoded({ extended: false }));
+server.use("/images", express.static(path.join(__dirname, "images")));
 server.use(cors());
 server.use(compression());
 
