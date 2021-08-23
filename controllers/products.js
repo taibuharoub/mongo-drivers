@@ -1,5 +1,8 @@
 /* eslint-disable no-unused-vars */
+import { MongoClient, Decimal128 } from "mongodb";
 import { products } from "../utils/products.js";
+
+// const MongoClient = mongodb.MongoClient;
 
 export const getProducts = (req, res, next) => {
   // Return a list of dummy products
@@ -30,11 +33,32 @@ export const postProduct = (req, res, next) => {
   const newProduct = {
     name: req.body.name,
     description: req.body.description,
-    price: parseFloat(req.body.price), // store this as 128bit decimal in MongoDB
+    price: Decimal128.fromString(req.body.price.toString()), // store this as 128bit decimal in MongoDB
+    // price: parseFloat(req.body.price), // store this as 128bit decimal in MongoDB
     image: req.body.image,
   };
-  console.log(newProduct);
-  res.status(201).json({ message: "Product added", productId: "DUMMY" });
+  MongoClient.connect(process.env.MONGO_URL)
+    .then((client) => {
+      client
+        .db()
+        .collection("products")
+        .insertOne(newProduct)
+        .then((result) => {
+          console.log(result);
+          client.close();
+          res
+            .status(201)
+            .json({ message: "Product added", productId: result.insertedId });
+        })
+        .catch((err) => {
+          console.log(err);
+          client.close();
+          res.status(500).json({ message: "An Error occured!" });
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 };
 
 export const updateProduct = (req, res, next) => {
