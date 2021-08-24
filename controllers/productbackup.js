@@ -1,7 +1,6 @@
 /* eslint-disable no-unused-vars */
-import { Decimal128 } from "mongodb";
-import * as db from "../utils/dbDrive2.js";
-// import { products } from "../utils/products.js";
+import { MongoClient, Decimal128 } from "mongodb";
+import { products } from "../utils/products.js";
 
 // const MongoClient = mongodb.MongoClient;
 
@@ -15,17 +14,26 @@ export const getProducts = (req, res, next) => {
       queryPage * pageSize
     );
   } */
-  const products = [];
-  db.getDb()
-    .db()
-    .collection("products")
-    .find()
-    .forEach((productDoc) => {
-      productDoc.price = productDoc.price.toString();
-      products.push(productDoc);
-    })
-    .then((result) => {
-      res.status(200).json(products);
+  MongoClient.connect(process.env.MONGO_URL)
+    .then((client) => {
+      const products = [];
+      client
+        .db()
+        .collection("products")
+        .find()
+        .forEach((productDoc) => {
+          productDoc.price = productDoc.price.toString();
+          products.push(productDoc);
+        })
+        .then((result) => {
+          client.close();
+          res.status(200).json(products);
+        })
+        .catch((err) => {
+          console.log(err);
+          client.close();
+          res.status(500).json({ message: "An Error occured!" });
+        });
     })
     .catch((err) => {
       console.log(err);
@@ -51,15 +59,24 @@ export const postProduct = (req, res, next) => {
     // price: parseFloat(req.body.price), // store this as 128bit decimal in MongoDB
     image: req.body.image,
   };
-  db.getDb()
-    .db()
-    .collection("products")
-    .insertOne(newProduct)
-    .then((result) => {
-      console.log(result);
-      res
-        .status(201)
-        .json({ message: "Product added", productId: result.insertedId });
+  MongoClient.connect(process.env.MONGO_URL)
+    .then((client) => {
+      client
+        .db()
+        .collection("products")
+        .insertOne(newProduct)
+        .then((result) => {
+          console.log(result);
+          client.close();
+          res
+            .status(201)
+            .json({ message: "Product added", productId: result.insertedId });
+        })
+        .catch((err) => {
+          console.log(err);
+          client.close();
+          res.status(500).json({ message: "An Error occured!" });
+        });
     })
     .catch((err) => {
       console.log(err);
