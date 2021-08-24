@@ -5,9 +5,7 @@ import { products } from "../utils/products.js";
 // const MongoClient = mongodb.MongoClient;
 
 export const getProducts = (req, res, next) => {
-  // Return a list of dummy products
-  // Later, this data will be fetched from MongoDB
-  const queryPage = req.query.page;
+  /* const queryPage = req.query.page;
   const pageSize = 5;
   let resultProducts = [...products];
   if (queryPage) {
@@ -15,8 +13,32 @@ export const getProducts = (req, res, next) => {
       (queryPage - 1) * pageSize,
       queryPage * pageSize
     );
-  }
-  res.status(200).json(resultProducts);
+  } */
+  MongoClient.connect(process.env.MONGO_URL)
+    .then((client) => {
+      const products = [];
+      client
+        .db()
+        .collection("products")
+        .find()
+        .forEach((productDoc) => {
+          productDoc.price = productDoc.price.toString();
+          products.push(productDoc);
+        })
+        .then((result) => {
+          client.close();
+          res.status(200).json(products);
+        })
+        .catch((err) => {
+          console.log(err);
+          client.close();
+          res.status(500).json({ message: "An Error occured!" });
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ message: "An Error occured!" });
+    });
 };
 
 export const getProduct = (req, res, next) => {
@@ -58,6 +80,7 @@ export const postProduct = (req, res, next) => {
     })
     .catch((err) => {
       console.log(err);
+      res.status(500).json({ message: "An Error occured!" });
     });
 };
 
