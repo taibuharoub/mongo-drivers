@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { Decimal128 } from "mongodb";
+import { Decimal128, ObjectId } from "mongodb";
 import * as db from "../utils/dbDrive2.js";
 // import { products } from "../utils/products.js";
 
@@ -34,13 +34,18 @@ export const getProducts = (req, res, next) => {
 };
 
 export const getProduct = (req, res, next) => {
-  const product = products.find((p) => p._id === req.params.id);
-  if (!product) {
-    const error = new Error(`No product found with that id ${req.params.id}`);
-    error.statusCode = 422;
-    throw error;
-  }
-  res.status(200).json(product);
+  db.getDb()
+    .db()
+    .collection("products")
+    .findOne({ _id: new ObjectId(req.params.id) })
+    .then((productDoc) => {
+      productDoc.price = productDoc.price.toString(); //since its 128bit decimal
+      res.status(200).json(productDoc);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ message: "An Error occured!" });
+    });
 };
 
 export const postProduct = (req, res, next) => {
