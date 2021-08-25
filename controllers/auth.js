@@ -10,13 +10,30 @@ const createToken = () => {
 export const login = (req, res, next) => {
   const email = req.body.email;
   const pw = req.body.password;
-  // Check if user login is valid
-  // If yes, create token and return it to client
-  const token = createToken();
-  // res.status(200).json({ token: token, user: { email: 'dummy@dummy.com' } });
-  res.status(401).json({
-    message: "Authentication failed, invalid username or password.",
-  });
+  db.getDb()
+    .db()
+    .collection("users")
+    .findOne({ email: email })
+    .then((userDoc) => {
+      return bcrypt.compare(pw, userDoc.password);
+    })
+    .then((result) => {
+      console.log(result);
+      if (!result) {
+        throw Error();
+      }
+      const token = createToken();
+      res.status(200).json({
+        message: "Authentication succeeded.",
+        token: token,
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(401).json({
+        message: "Authentication failed, invalid username or password.",
+      });
+    });
 };
 
 export const signup = (req, res, next) => {
